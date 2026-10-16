@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"IA.Energia","l":"Central"},{"p":"IA.Energia","l":"Centrales"},{"p":"IA.Energia","l":"Cliente"},{"p":"IA.Energia","l":"Clientes"},{"p":"IA.Energia","l":"TestEnergia"},{"p":"IA.Energia","l":"VEnergia"}]
