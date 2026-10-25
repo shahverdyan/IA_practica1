@@ -283,7 +283,7 @@ public class EnergiaDemo {
     private static void experimento5() throws Exception {
         calentar();
         cabecera();
-        for (String p : lista("penal", "0,100,500,1000,2000,5000,10000")) {
+        for (String p : lista("penal", "0,100,500,1000,2000,5000,10000,25000,50000,100000")) {
             for (int a = 0; a < 2; a++) {
                 boolean simulatedAnnealing = (a == 1);
                 List<double[]> datos = new ArrayList<double[]>();
