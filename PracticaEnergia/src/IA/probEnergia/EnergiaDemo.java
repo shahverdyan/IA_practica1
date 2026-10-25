@@ -7,8 +7,10 @@ import aima.search.framework.Problem;
 import aima.search.framework.Search;
 import aima.search.framework.SearchAgent;
 import aima.search.informed.HillClimbingSearch;
+import aima.search.informed.Scheduler;
 import aima.search.informed.SimulatedAnnealingSearch;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,11 @@ public class EnergiaDemo {
 
     /// Valor de penalizacion que indica que se usa la heuristica original
     private static final double SIN_PENALIZACION = -1;
+
+    /// Experimento 3: t0 es la iteracion en que la probabilidad de aceptar un estado DELTA_E_REFERENCIA euros peor
+    /// baja de PROBABILIDAD_CERO (1 euro es la unidad del beneficio)
+    private static final double DELTA_E_REFERENCIA = 1;
+    private static final double PROBABILIDAD_CERO = 0.001;
 
     /// Opciones de la linea de comandos (clave=valor)
     private static Map<String, String> opciones = new HashMap<String, String>();
@@ -63,9 +70,10 @@ public class EnergiaDemo {
 
         operadores = conjuntoOperadores(opcion("ops", "A"));
         inicial = estrategiaInicial(opcion("init", "greedy"));
-        saSteps = Integer.parseInt(lista("steps", "100000")[0]);
+        // Parametros de SA elegidos en el experimento 3 (ver experiment3_SA.md)
+        saSteps = Integer.parseInt(lista("steps", "260000")[0]);
         saStiter = Integer.parseInt(lista("stiter", "100")[0]);
-        saK = Integer.parseInt(lista("k", "1000")[0]);
+        saK = Integer.parseInt(lista("k", "25")[0]);
         saLambda = Double.parseDouble(lista("lambda", "0.0001")[0]);
         repeticiones = Integer.parseInt(opcion("reps", "10"));
 
@@ -148,9 +156,17 @@ public class EnergiaDemo {
         }
     }
 
-    /*!\brief Experimento 3: parametros de Simulated Annealing (todas las combinaciones de las listas), con Hill Climbing de referencia
+    /*!\brief Experimento 3: parametros de Simulated Annealing, con Hill Climbing de referencia, en tres fases (opcion fase):
+     *        kl:     todas las combinaciones de k y lambda, con steps grande y stiter fijo
+     *        steps:  con k y lambda elegidos, steps = factor * t0
+     *        stiter: con k, lambda y steps elegidos, varios divisores de steps
      */
     private static void experimento3() throws Exception {
+        String fase = opcion("fase", "kl");
+        if (!fase.equals("kl") && !fase.equals("steps") && !fase.equals("stiter")) {
+            uso();
+            return;
+        }
         calentar();
         cabecera();
         List<double[]> referencia = new ArrayList<double[]>();
@@ -158,25 +174,74 @@ public class EnergiaDemo {
             referencia.add(experimentar("3", "referencia", CENTRALES, CLIENTES, inicial, false, SIN_PENALIZACION, seed));
         }
         resumen("referencia", "HC", referencia);
+        System.out.println("# t0 = iteracion en que la probabilidad de aceptar un estado " + texto(DELTA_E_REFERENCIA)
+                + " euro peor baja de " + texto(PROBABILIDAD_CERO)
+                + "; iteraciones_reales = las que hace AIMA (para antes si la temperatura llega a 0)");
 
-        for (String steps : lista("steps", "100000")) {
-            for (String stiter : lista("stiter", "100")) {
-                for (String k : lista("k", "1,10,100,1000,10000")) {
-                    for (String lambda : lista("lambda", "0.01,0.001,0.0001")) {
-                        saSteps = Integer.parseInt(steps);
-                        saStiter = Integer.parseInt(stiter);
-                        saK = Integer.parseInt(k);
-                        saLambda = Double.parseDouble(lambda);
-                        String configuracion = "steps=" + steps + " stiter=" + stiter + " k=" + k + " lambda=" + lambda;
-                        List<double[]> datos = new ArrayList<double[]>();
-                        for (int seed = 1; seed <= repeticiones; seed++) {
-                            datos.add(experimentar("3", configuracion, CENTRALES, CLIENTES, inicial, true, SIN_PENALIZACION, seed));
-                        }
-                        resumen(configuracion, "SA", datos);
-                    }
+        if (fase.equals("kl")) {
+            int steps = Integer.parseInt(opcion("steps", "500000"));
+            for (String k : lista("k", "1,5,25,125,625,3125,15625")) {
+                for (String lambda : lista("lambda", "1,0.01,0.0001")) {
+                    configuracionSA(steps, saStiter, Integer.parseInt(k), Double.parseDouble(lambda));
                 }
             }
+        } else if (fase.equals("steps")) {
+            int t0 = iteracionProbabilidadCero(saK, saLambda, saStiter);
+            for (String factor : lista("factores", "1,2,5,10,20")) {
+                configuracionSA(Integer.parseInt(factor) * t0, saStiter, saK, saLambda);
+            }
+        } else {
+            List<Integer> valores = new ArrayList<Integer>();
+            if (opciones.containsKey("stiter")) {
+                for (String s : lista("stiter", "")) valores.add(Integer.parseInt(s));
+            } else {
+                for (int s = 1; s <= 10000 && s < saSteps; s *= 10) valores.add(s);
+                valores.add(saSteps);   // la temperatura no cambia nunca: SA sin enfriamiento
+            }
+            for (int stiter : valores) {
+                if (saSteps % stiter != 0) System.out.println("# stiter=" + stiter + " no divide steps=" + saSteps + ": se omite");
+                else configuracionSA(saSteps, stiter, saK, saLambda);
+            }
         }
+    }
+
+    /*!\brief Repeticiones de una configuracion de Simulated Annealing del experimento 3
+     */
+    private static void configuracionSA(int steps, int stiter, int k, double lambda) throws Exception {
+        saSteps = steps;
+        saStiter = stiter;
+        saK = k;
+        saLambda = lambda;
+        String configuracion = "steps=" + steps + " stiter=" + stiter + " k=" + k + " lambda=" + texto(lambda);
+        int t0 = iteracionProbabilidadCero(k, lambda, stiter);
+        System.out.println("# " + configuracion + ": t0=" + t0 + " steps/t0=" + redondear((double) steps / t0)
+                + " iteraciones_reales=" + iteracionesReales(steps, stiter, k, lambda));
+        List<double[]> datos = new ArrayList<double[]>();
+        for (int seed = 1; seed <= repeticiones; seed++) {
+            datos.add(experimentar("3", configuracion, CENTRALES, CLIENTES, inicial, true, SIN_PENALIZACION, seed));
+        }
+        resumen(configuracion, "SA", datos);
+    }
+
+    /*!\brief t0: primera iteracion (multiplo de stiter) en que la probabilidad de aceptar un estado DELTA_E_REFERENCIA
+     *        euros peor baja de PROBABILIDAD_CERO
+     */
+    private static int iteracionProbabilidadCero(int k, double lambda, int stiter) {
+        // AIMA acepta un estado peor con probabilidad 1 / (1 + e^(|deltaE| / T)), que es menor que p si T < |deltaE| / ln(1/p - 1)
+        double temperaturaCero = DELTA_E_REFERENCIA / Math.log(1 / PROBABILIDAD_CERO - 1);
+        if (k < temperaturaCero) return 0;
+        // T = k * e^(-lambda * t) baja de temperaturaCero cuando t > ln(k / temperaturaCero) / lambda
+        return (int) Math.ceil(Math.log(k / temperaturaCero) / lambda / stiter) * stiter;
+    }
+
+    /*!\brief Iteraciones que hace realmente SA: AIMA para antes de steps si la temperatura llega a ser exactamente 0
+     */
+    private static int iteracionesReales(int steps, int stiter, int k, double lambda) {
+        Scheduler scheduler = new Scheduler(k, lambda, stiter);
+        for (int t = 0; t < steps; t += stiter) {
+            if (scheduler.getTemp(t) == 0.0) return t;
+        }
+        return steps;
     }
 
     /*!\brief Experimento 4: tiempo de Hill Climbing al crecer el numero de clientes y el de centrales
@@ -348,6 +413,11 @@ public class EnergiaDemo {
         return Math.round(x * 10) / 10.0;
     }
 
+    /// Numero sin notacion cientifica (0.0001 en lugar de 1.0E-4)
+    private static String texto(double x) {
+        return BigDecimal.valueOf(x).stripTrailingZeros().toPlainString();
+    }
+
     private static String opcion(String clave, String defecto) {
         return opciones.containsKey(clave) ? opciones.get(clave) : defecto;
     }
@@ -373,7 +443,10 @@ public class EnergiaDemo {
         System.out.println("Uso: java IA.probEnergia.EnergiaDemo [modo] [opcion=valor ...]");
         System.out.println("  modos: demo (por defecto), traza, exp1, exp2, exp3, exp4, exp5, exp6");
         System.out.println("  opciones: ops=A|B  init=ordenada|greedy|vacia  reps=10  seed=1");
-        System.out.println("            steps=100000 stiter=100 k=1000 lambda=0.0001 (en exp3 se aceptan listas: k=1,10,100)");
+        System.out.println("            steps=260000 stiter=100 k=25 lambda=0.0001 (Simulated Annealing)");
+        System.out.println("            exp3: fase=kl (listas k=1,5,... lambda=1,0.01,... con steps=500000)");
+        System.out.println("                  fase=steps (factores=1,2,5,10,20: steps = factor * t0)");
+        System.out.println("                  fase=stiter (lista stiter=1,10,...; solo los divisores de steps)");
         System.out.println("            trazaSA=si (muestra cada estado peor que acepta Simulated Annealing)");
         System.out.println("            clientes=250,500,... centrales=40,80,... (exp4)  penal=0,100,... (exp5)  factorC=1,2,3 (exp6)");
     }

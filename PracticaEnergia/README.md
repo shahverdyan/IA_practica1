@@ -60,10 +60,12 @@ java -cp "lib/*:PracticaEnergia/bin" IA.probEnergia.EnergiaDemo [mode] [opcio=va
 | `seed` | `1` | Llavor de l'escenari (modes `demo` i `traza`) |
 | `init` | `greedy` | Solució inicial: `ordenada`, `greedy` o `vacia` (aquesta última, només per a l'experiment 5) |
 | `ops` | `A` | Operadors: `A` = moure + desassignar, `B` = A + intercanviar |
-| `steps` | `100000` | Iteracions de SA |
-| `stiter` | `100` | Iteracions de SA amb la mateixa temperatura (ha de dividir `steps`) |
-| `k` | `1000` | Paràmetre k de la temperatura de SA (enter) |
-| `lambda` | `0.0001` | Paràmetre λ de la temperatura de SA |
+| `steps` | `260000` | Iteracions de SA (a `exp3 fase=kl`, per defecte `500000`) |
+| `stiter` | `100` | Iteracions de SA amb la mateixa temperatura (ha de dividir `steps`). A `exp3 fase=stiter`, llista |
+| `k` | `25` | Paràmetre k de la temperatura de SA (enter). A `exp3 fase=kl`, llista (per defecte `1,5,25,125,625,3125,15625`) |
+| `lambda` | `0.0001` | Paràmetre λ de la temperatura de SA. A `exp3 fase=kl`, llista (per defecte `1,0.01,0.0001`) |
+| `fase` | `kl` | Fase de l'experiment 3: `kl`, `steps` o `stiter` |
+| `factores` | `1,2,5,10,20` | Experiment 3, fase `steps`: es prova steps = factor × t0 |
 | `trazaSA` | `no` | `si`: mostra cada estat pitjor que accepta SA |
 | `reps` | `10` | Repeticions de cada configuració als experiments (llavors 1..reps) |
 
@@ -105,9 +107,9 @@ Hill Climbing  -->
 Solucion final: Beneficio=1349270 GarantizadosServidos=763 NoGarantizadosServidos=237 CentralesEnMarcha(A,B,C)=5,10,25
 Pasos: 0  Nodos expandidos: 1  Tiempo: 36 ms
 
-Simulated Annealing (steps=100000 stiter=100 k=1000 lambda=1.0E-4)  -->
+Simulated Annealing (steps=260000 stiter=100 k=25 lambda=1.0E-4)  -->
 Solucion final: Beneficio=1349270 ...
-Pasos aceptados hasta la mejor solucion: 0  Tiempo: 343 ms
+Pasos aceptados hasta la mejor solucion: 0  Tiempo: 764 ms
 ```
 - **Beneficio**: benefici en euros.
 - **GarantizadosServidos / NoGarantizadosServidos**: clients servits de cada tipus de contracte.
@@ -189,17 +191,22 @@ Valors de referència amb `seed=1`. HC i les solucions inicials són determinist
   - apagar una central obligaria a moure tots els seus clients un per un, i cap d'aquests passos millora el benefici;
   - encendre una central costa milers d'euros en un sol pas.
 - **HC des de l'ordenada fa 3 passos** (1.116.741 €). Col·loca 3 clients no garantits en els forats que queden lliures i s'atura: encendre una central per a un sol client fa perdre diners.
-- **SA mai retorna una solució pitjor que la inicial.** Des de l'ordenada pot millorar més que HC, perquè de tant en tant accepta encendre una central i després l'omple. Amb `seed=1` i els paràmetres per defecte, per exemple, arriba a uns 1.122.000 €. Des de la greedy, rarament millora.
+- **SA mai retorna una solució pitjor que la inicial.** Amb els paràmetres per defecte (k = 25), SA gairebé mai accepta empitjoraments grans, com encendre una central. Sí que accepta moviments que no canvien el benefici, i això li permet trobar llocs on col·locar més clients. Des de l'ordenada, amb `seed=1`, arriba a uns 1.118.000 € (HC: 1.116.741 €). Des de la greedy, rarament millora. SA depèn de l'atzar: cada execució pot donar un valor una mica diferent.
 
 ## Experiments
 
 Cada mode `expN` escriu una fila CSV, separada per `;`, per a cada execució. Al final de cada configuració hi afegeix una línia que comença per `#`, amb la mitjana i la desviació de les repeticions.
 
+A l'experiment 3, abans de cada configuració de SA hi ha una altra línia `#` amb:
+- `t0`: la iteració en què la probabilitat d'acceptar un estat pitjor arriba a 0;
+- `steps/t0`: quantes vegades t0 són les iteracions de la configuració;
+- `iteraciones_reales`: les iteracions que fa realment AIMA, que s'atura abans de `steps` si la temperatura arriba a 0.
+
 | Mode | Què compara |
 |---|---|
 | `exp1` | Conjunts d'operadors A i B amb HC (per defecte des de la solució ordenada) |
 | `exp2` | Solucions inicials ordenada i greedy amb HC |
-| `exp3` | Paràmetres de SA: totes les combinacions de les llistes `steps`, `stiter`, `k` i `lambda` (p. ex. `k=1,100,10000`), amb HC com a referència |
+| `exp3` | Paràmetres de SA en tres fases (`fase=kl`, `fase=steps`, `fase=stiter`), amb HC com a referència. Els valors i el perquè són a [experiment3_SA.md](experiment3_SA.md) |
 | `exp4` | Temps de HC augmentant els clients (`clientes=250,500,...`) i les centrals (`centrales=40,80,...`) |
 | `exp5` | Penalització per MW garantit no servit (`penal=0,100,...`), partint de la solució buida, amb HC i SA |
 | `exp6` | Centrals de tipus C multiplicades per 1, 2 i 3 (`factorC=1,2,3`), amb HC i SA |

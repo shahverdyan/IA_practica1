@@ -1,0 +1,23 @@
+experimento;configuracion;semilla;algoritmo;beneficio_inicial;beneficio;tiempo_ms;pasos;nodos_expandidos;garantizados_servidos;no_garantizados_servidos;MW_garantizados_no_servidos;centrales_A;centrales_B;centrales_C;MW_A;MW_B;MW_C;MW_perdidos
+2;inicial=ordenada;1;HC;1113958;1116741;135;3;4;763;3;0;5;10;5;3156;1649;244;1210
+2;inicial=ordenada;2;HC;1053080;1063828;77;2;3;760;2;0;5;10;11;2776;1806;459;1184
+2;inicial=ordenada;3;HC;1024917;1034625;50;3;4;760;3;0;5;10;14;2569;1903;757;1307
+2;inicial=ordenada;4;HC;1069416;1083807;66;4;5;762;3;0;5;10;14;2537;1941;940;1317
+2;inicial=ordenada;5;HC;952144;961838;41;3;4;741;3;0;5;10;17;2331;1738;833;1175
+2;inicial=ordenada;6;HC;937281;947958;76;4;5;726;4;0;5;10;14;2450;1594;818;1190
+2;inicial=ordenada;7;HC;944210;951294;19;2;3;757;2;0;5;10;20;2242;1694;1228;1302
+2;inicial=ordenada;8;HC;919408;933534;12;7;8;759;7;0;5;10;24;2210;1581;1298;1240
+2;inicial=ordenada;9;HC;1017782;1035055;136;6;7;728;6;0;5;10;11;3005;1379;580;1185
+2;inicial=ordenada;10;HC;929321;931516;77;3;4;738;3;0;5;10;12;2622;1535;647;1271
+# inicial=ordenada HC: beneficio=1006020 (desv 68667) tiempo_ms=69 (desv 42) pasos=4 validas=10/10 centrales(A,B,C)=5.0,10.0,14.2 MW_perdidos=1238
+2;inicial=greedy;1;HC;1349270;1349270;7;0;1;763;237;0;5;10;25;2389;1648;1334;398
+2;inicial=greedy;2;HC;1370677;1370677;7;0;1;760;240;0;5;10;25;2530;1806;1090;469
+2;inicial=greedy;3;HC;1436374;1436374;2;0;1;760;240;0;5;10;25;2498;1901;1337;501
+2;inicial=greedy;4;HC;1439182;1439182;6;0;1;762;238;0;5;10;25;2354;1887;1559;498
+2;inicial=greedy;5;HC;1336745;1336745;2;0;1;741;243;0;5;10;25;2330;1739;1240;449
+2;inicial=greedy;6;HC;1363482;1363482;6;0;1;726;274;0;5;10;25;2400;1567;1470;416
+2;inicial=greedy;7;HC;1322273;1322273;0;0;1;757;210;0;5;10;25;2243;1692;1514;511
+2;inicial=greedy;8;HC;1310672;1310672;1;0;1;759;195;0;5;10;25;2211;1580;1375;349
+2;inicial=greedy;9;HC;1385123;1390138;6;1;2;728;272;0;5;10;24;2964;1377;1142;539
+2;inicial=greedy;10;HC;1262605;1262605;1;0;1;738;240;0;5;10;25;2625;1534;1375;801
+# inicial=greedy HC: beneficio=1358142 (desv 54875) tiempo_ms=4 (desv 3) pasos=0 validas=10/10 centrales(A,B,C)=5.0,10.0,24.9 MW_perdidos=493
